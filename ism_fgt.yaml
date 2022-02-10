@@ -1,0 +1,149 @@
+- hosts: fgt7 
+  gather_facts: no
+  connection: httpapi
+  collections:
+    - fortinet.fortios
+
+  vars:
+   vdom: "root"
+   ansible_httpapi_use_ssl: yes
+   ansible_httpapi_validate_certs: no
+   ansible_httpapi_port: 443
+   classification: "protected"
+
+  tasks:
+    - name: "Get Interface Status"
+      register: interfaces
+      fortios_monitor_fact:
+        access_token: "{{ fortios_access_token }}" 
+        selector: "system_available-interfaces"
+
+    - name: "ISM_0428: Screen Lock"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          admin_console_timeout: 15
+
+    - name: "ISM_0408: Login Banner - Enable"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          pre_login_banner: enable
+
+    - name: "ISM_0408: Login Banner - Message"
+      meta: noop
+
+    - name: "ISM_0421: Password Policy (Protected)"
+      when: classification == "protected"
+      fortios_system_password_policy:
+        access_token: "{{ fortios_access_token }}" 
+        system_password_policy:
+          apply_to: admin-password
+          min_lower_case_letter: 1
+          min_upper_case_letter: 1
+          min_non_alphanumeric: 1
+          minimum_length: 14
+          min_number: 1
+          min_change_characters: 1
+          reuse_password: disable
+          status: enable
+
+    - name: "ISM_1557: Password Policy (Secret)"
+      when: classification == "secret"
+      fortios_system_password_policy:
+        access_token: "{{ fortios_access_token }}" 
+        system_password_policy:
+          apply_to: admin-password
+          min_lower_case_letter: 1
+          min_upper_case_letter: 1
+          min_non_alphanumeric: 1
+          minimum_length: 17
+          min_number: 1
+          min_change_characters: 1
+          reuse_password: disable
+          status: enable
+
+    - name: "ISM_0433: Password Policy (Top Secret)"
+      when: classification == "top_secret"
+      fortios_system_password_policy:
+        access_token: "{{ fortios_access_token }}" 
+        system_password_policy:
+          apply_to: admin-password
+          min_lower_case_letter: 1
+          min_upper_case_letter: 1
+          min_non_alphanumeric: 1
+          minimum_length: 20
+          min_number: 1
+          min_change_characters: 1
+          reuse_password: disable
+          status: enable
+
+    - name: "ISM_1403: Failed Login Account Lockout"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          admin_lockout_threshold: 5
+          admin_lockout_duration: 300
+
+    - name: "ISM_1590: Password Expiry"
+      fortios_system_password_policy:
+        access_token: "{{ fortios_access_token }}" 
+        system_password_policy:
+          expire_status: enable
+          expire_day: 365
+      
+
+    - name: "ISM_0521: IPv6 Disable"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          gui_ipv6: disable
+          ipv6_allow_anycast_probe: disable
+          ipv6_allow_traffic_redirect: disable
+
+
+    - name: "ISM_1304: Default Account Disable"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          admin_maintainer: disable 
+
+
+    - name: "ISM_0534: Disable Unused Ports"
+      meta: noop
+
+    - name: "ISM_1311: Disable SNMP v1 and v2"
+      fortios_system_snmp_sysinfo:
+        system_snmp_sysinfo:
+          status: disable
+
+    - name: "ISM_0471: ASD Approved Cryptographic Algorithms"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          strong_crypto: enable
+
+    - name: "ISM_0994: Prefer ECDH and ECDSA"
+      meta: noop
+
+    - name: "ISM_0472: Use DH Modulus of at least 2048 Bits"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          dh_params: "8192"
+
+    - name: "ISM_1629: When using DH, select parameters according to NIST SP 800-56A Rev. 3"
+      meta: noop
+
+    - name: "ISM_0473: When using DSA for digital signatures, a modulus of at least 2048 bits is used."
+      meta: noop
+
+    - name: "ISM_1139: Use latest TLS version"
+      meta: noop
+
+    - name: "Debug"
+      vars:
+        msg: "{{ interfaces.meta.results | selectattr('type', 'equalto', 'physical') | map(attribute = 'name') | list }}" 
+        #msg: "{{ interfaces.meta.results }}"
+      debug:
+        msg: "{{ msg }}" 
