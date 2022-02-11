@@ -1,4 +1,4 @@
-- hosts: fgt7 
+- hosts: fgt7
   gather_facts: no
   connection: httpapi
   collections:
@@ -108,9 +108,15 @@
         system_global:
           admin_maintainer: disable 
 
-
     - name: "ISM_0534: Disable Unused Ports"
-      meta: noop
+      loop:
+        "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
+      fortios_system_interface:
+        state: "present"
+        access_token: "{{ fortios_access_token }}"
+        system_interface:
+          name: "{{ item.name }}"
+          status: "down"
 
     - name: "ISM_1311: Disable SNMP v1 and v2"
       fortios_system_snmp_sysinfo:
@@ -132,18 +138,30 @@
         system_global:
           dh_params: "8192"
 
-    - name: "ISM_1629: When using DH, select parameters according to NIST SP 800-56A Rev. 3"
-      meta: noop
-
-    - name: "ISM_0473: When using DSA for digital signatures, a modulus of at least 2048 bits is used."
-      meta: noop
-
     - name: "ISM_1139: Use latest TLS version"
-      meta: noop
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          admin_https_ssl_versions: "tlsv1-3"
+          ssl_min_proto_version: "tlsv1-3"
 
-    - name: "Debug"
-      vars:
-        msg: "{{ interfaces.meta.results | selectattr('type', 'equalto', 'physical') | map(attribute = 'name') | list }}" 
-        #msg: "{{ interfaces.meta.results }}"
-      debug:
-        msg: "{{ msg }}" 
+    - name: "ISM_1453: PFS is used for TLS connections"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          ssl_static_key_ciphers: disable
+
+    - name: "ISM_1506: The use of SSH version 1 is disabled."
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          admin_ssh_v1: disable
+          admin_telnet: disable
+
+    - name: "ISM_0484: SSH daemon configuration"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          ssh_hmac_md5: disable
+          ssh_cbc_cipher: disable
+
