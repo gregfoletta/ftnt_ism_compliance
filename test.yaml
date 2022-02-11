@@ -1,0 +1,26 @@
+- hosts: lab_fgt
+  gather_facts: no
+  connection: httpapi
+  collections:
+    - fortinet.fortios
+
+  vars:
+    vdom: "root"
+    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 443
+    classification: "protected"
+
+  tasks:
+    - name: "Get Interface Status"
+      register: interfaces
+      fortios_monitor_fact:
+        access_token: "{{ fortios_access_token }}" 
+        selector: "system_available-interfaces"
+
+    - name: "Debug"
+      debug:
+        msg: "{{ item }}" 
+      loop:
+        "{{ interfaces.meta.results | selectattr('type', 'defined') | selectattr('type', 'equalto', 'physical') | selectattr('link', 'equalto', 'down ') | list }}" 
+        

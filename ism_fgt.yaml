@@ -1,4 +1,4 @@
-- hosts: fgt7 
+- hosts: lab_fgt  
   gather_facts: no
   connection: httpapi
   collections:
@@ -108,9 +108,15 @@
         system_global:
           admin_maintainer: disable 
 
-
     - name: "ISM_0534: Disable Unused Ports"
-      meta: noop
+      loop:
+        "{{ interfaces.meta.results | selectattr('type', 'defined') | selectattr('type', 'equalto', 'physical') | selectattr('link', 'equalto', 'down ') | list }}" 
+      fortios_system_interface:
+        state: "present"
+        access_token: "{{ fortios_access_token }}" 
+        system_interface:
+          name: "{{ item.name }}"
+          status: "down"
 
     - name: "ISM_1311: Disable SNMP v1 and v2"
       fortios_system_snmp_sysinfo:
@@ -142,8 +148,5 @@
       meta: noop
 
     - name: "Debug"
-      vars:
-        msg: "{{ interfaces.meta.results | selectattr('type', 'equalto', 'physical') | map(attribute = 'name') | list }}" 
-        #msg: "{{ interfaces.meta.results }}"
       debug:
-        msg: "{{ msg }}" 
+        msg: "{{ interfaces.meta.results | selectattr('type', 'defined') | selectattr('type', 'equalto', 'physical') | selectattr('link', 'equalto', 'down ') | list }}" 
