@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Greg Foletta, Andrew Pollicina
-  description: Applies ISM compliance controls to FortiGates.
+  description: Applies ISM compliance controls to Fortinet devices.
   company: Fortinet
   min_ansible_version: 2.9
 
