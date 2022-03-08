@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  author: Greg Foletta, Andrew Pollicina
+  description: Applies ISM compliance controls to FortiGates.
+  company: Fortinet
+  min_ansible_version: 2.9
+
+dependencies: []
+
+collections:
+  - fortinet.fortios
