@@ -18,7 +18,14 @@
       pre_login_banner: enable
 
 - name: "ISM_0408: Login Banner - Message"
-  meta: noop
+  fortios_system_replacemsg_admin:
+    access_token: "{{ fortios_access_token }}"
+    state: present
+    system_replacemsg_admin:
+      buffer: "{{ ftnt_ism_compliance_pre_login_banner }}"
+      format: text
+      header: http
+      msg_type: pre_admin-disclaimer-text
 
 - name: "ISM_0421: Password Policy (Protected)"
   when: classification == "protected"
@@ -50,7 +57,7 @@
       reuse_password: disable
       status: enable
 
-- name: "ISM_0433: Password Policy (Top Secret)"
+- name: "ISM_0422: Password Policy (Top Secret)"
   when: classification == "top_secret"
   fortios_system_password_policy:
     access_token: "{{ fortios_access_token }}" 
