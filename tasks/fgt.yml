@@ -110,11 +110,20 @@
       name: "{{ item.name }}"
       status: "down"
 
-- name: "ISM_1311: Disable SNMP v1 and v2"
-  fortios_system_snmp_sysinfo:
+# If snmp communities exist this means v1 and / or v2 are in use.
+- name: "ISM_1311: Get existing SNMP community config"
+  fortios_configuration_fact:
     access_token: "{{ fortios_access_token }}"
-    system_snmp_sysinfo:
-      status: disable
+    selector: system.snmp_community
+  register: ftnt_ism_compliance_fgt_snmp_communities
+
+- name: "ISM_1311: Remove any SNMP v1 and v2 communities"
+  fortios_system_snmp_community:
+    access_token: "{{ fortios_access_token }}"
+    state: absent
+    system_snmp_community:
+      id: "{{ item }}"
+  loop: "{{ ftnt_ism_compliance_fgt_snmp_communities.meta.results | map(attribute='id') | list }}"
 
 - name: "ISM_0471: ASD Approved Cryptographic Algorithms"
   fortios_system_global:
