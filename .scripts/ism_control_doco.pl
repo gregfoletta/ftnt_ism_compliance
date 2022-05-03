@@ -61,11 +61,17 @@ sub main {
 
     # Generate a markdown table
     say "| ISM ID | Description |";
-    say "| ______ | ___________ |";
+    say "| ------ | ----------- |";
     # NOTE: using each, no modification of hash allowed
-    while( my ($control, $properties) = (each %ism_controls)) {
-        next unless $properties->{implemented};
-        say "| $control | $properties->{description} |";
+    for my $control (sort keys %ism_controls) {
+        next unless $ism_controls{$control}{implemented};
+        my $props = $ism_controls{$control};
+
+        $props->{description} //= "";
+
+        # Remove newlines in the description
+        $props->{description} =~ s{\R}{<br>}g;
+        say "| $control | $props->{description} |";
     }
 
         
