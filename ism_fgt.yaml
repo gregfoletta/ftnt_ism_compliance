@@ -1,4 +1,4 @@
-- hosts: fgt7
+- hosts: fgt
   gather_facts: no
   connection: httpapi
   collections:
