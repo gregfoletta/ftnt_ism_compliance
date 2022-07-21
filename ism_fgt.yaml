@@ -1,39 +1,56 @@
-- hosts: fgt7
+- hosts: fgt_a
   gather_facts: no
   connection: httpapi
   collections:
     - fortinet.fortios
 
   vars:
-   vdom: "root"
-   ansible_httpapi_use_ssl: yes
-   ansible_httpapi_validate_certs: no
-   ansible_httpapi_port: 443
-   classification: "protected"
+  vdom: "root"
+  ansible_connection: httpapi
+  ansible_network_os: fortinet.fortios.fortios
+  ansible_httpapi_use_ssl: yes
+  ansible_httpapi_validate_certs: no
+  ansible_httpapi_port: 443
+  classification: "protected"
+  default_login_banner: >
+    This is a private computer system. Unauthorized access or use
+    is prohibited and subject to prosecution and/or disciplinary
+    action. Any use of this system constitutes consent to
+    monitoring at all times and users are not entitled to any
+    expectation of privacy. If monitoring reveals possible evidence
+    of violation of criminal statutes, this evidence and any other
+    related information, including identification information about
+    the user, may be provided to law enforcement officials.
+    If monitoring reveals violations of security regulations or
+    unauthorized use, employees who violate security regulations or
+    make unauthorized use of this system are subject to appropriate
+    disciplinary action.
 
   tasks:
+    - name: "Show Vars"
+      debug: 
+        msg: "{{ vars }}"
+
     - name: "Get Interface Status"
       register: interfaces
       fortios_monitor_fact:
         access_token: "{{ fortios_access_token }}" 
         selector: "system_available-interfaces"
 
-    - name: "ISM_0428: Screen Lock"
+    - name: "ISM-0428: Screen Lock"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           admin_console_timeout: 15
 
-    - name: "ISM_0408: Login Banner - Enable"
+    - name: "ISM-0408: Login Banner"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           pre_login_banner: enable
+          pre-login-banner-message: "{{ login_banner | default(default_login_banner) }}"
 
-    - name: "ISM_0408: Login Banner - Message"
-      meta: noop
-
-    - name: "ISM_0421: Password Policy (Protected)"
+    - name: "ISM-0421: Password Policy (Protected)"
       when: classification == "protected"
       fortios_system_password_policy:
         access_token: "{{ fortios_access_token }}" 
@@ -48,7 +65,7 @@
           reuse_password: disable
           status: enable
 
-    - name: "ISM_1557: Password Policy (Secret)"
+    - name: "ISM-1557: Password Policy (Secret)"
       when: classification == "secret"
       fortios_system_password_policy:
         access_token: "{{ fortios_access_token }}" 
@@ -63,7 +80,7 @@
           reuse_password: disable
           status: enable
 
-    - name: "ISM_0433: Password Policy (Top Secret)"
+    - name: "ISM-0433: Password Policy (Top Secret)"
       when: classification == "top_secret"
       fortios_system_password_policy:
         access_token: "{{ fortios_access_token }}" 
@@ -78,14 +95,14 @@
           reuse_password: disable
           status: enable
 
-    - name: "ISM_1403: Failed Login Account Lockout"
+    - name: "ISM-1403: Failed Login Account Lockout"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           admin_lockout_threshold: 5
           admin_lockout_duration: 300
 
-    - name: "ISM_1590: Password Expiry"
+    - name: "ISM-1590: Password Expiry"
       fortios_system_password_policy:
         access_token: "{{ fortios_access_token }}" 
         system_password_policy:
@@ -93,7 +110,7 @@
           expire_day: 365
       
 
-    - name: "ISM_0521: IPv6 Disable"
+    - name: "ISM-0521: IPv6 Disable"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
@@ -102,15 +119,14 @@
           ipv6_allow_traffic_redirect: disable
 
 
-    - name: "ISM_1304: Default Account Disable"
+    - name: "ISM-1304: Default Account Disable"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           admin_maintainer: disable 
 
-    - name: "ISM_0534: Disable Unused Ports"
-      loop:
-        "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
+    - name: "ISM-0534: Disable Unused Ports"
+      loop: "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
       fortios_system_interface:
         state: "present"
         access_token: "{{ fortios_access_token }}"
@@ -118,50 +134,49 @@
           name: "{{ item.name }}"
           status: "down"
 
-    - name: "ISM_1311: Disable SNMP v1 and v2"
+    - name: "ISM-1311: Disable SNMP v1 and v2"
       fortios_system_snmp_sysinfo:
         system_snmp_sysinfo:
           status: disable
 
-    - name: "ISM_0471: ASD Approved Cryptographic Algorithms"
+    - name: "ISM-0471: ASD Approved Cryptographic Algorithms"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           strong_crypto: enable
 
-    - name: "ISM_0994: Prefer ECDH and ECDSA"
+    - name: "ISM-0994: Prefer ECDH and ECDSA"
       meta: noop
 
-    - name: "ISM_0472: Use DH Modulus of at least 2048 Bits"
+    - name: "ISM-0472: Use DH Modulus of at least 2048 Bits"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           dh_params: "8192"
 
-    - name: "ISM_1139: Use latest TLS version"
+    - name: "ISM-1139: Use latest TLS version"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           admin_https_ssl_versions: "tlsv1-3"
           ssl_min_proto_version: "tlsv1-3"
 
-    - name: "ISM_1453: PFS is used for TLS connections"
+    - name: "ISM-1453: PFS is used for TLS connections"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           ssl_static_key_ciphers: disable
 
-    - name: "ISM_1506: The use of SSH version 1 is disabled."
+    - name: "ISM-1506: The use of SSH version 1 is disabled."
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           admin_ssh_v1: disable
           admin_telnet: disable
 
-    - name: "ISM_0484: SSH daemon configuration"
+    - name: "ISM-0484: SSH daemon configuration"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
           ssh_hmac_md5: disable
           ssh_cbc_cipher: disable
-
