@@ -125,8 +125,9 @@
         system_global:
           admin_maintainer: disable 
 
-    - name: "ISM-0534: Disable Unused Ports"
-      loop: "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
+    - name: "ISM_0534: Disable Unused Ports"
+      loop:
+        "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
       fortios_system_interface:
         state: "present"
         access_token: "{{ fortios_access_token }}"
@@ -175,6 +176,13 @@
           admin_telnet: disable
 
     - name: "ISM-0484: SSH daemon configuration"
+      fortios_system_global:
+        access_token: "{{ fortios_access_token }}" 
+        system_global:
+          ssh_hmac_md5: disable
+          ssh_cbc_cipher: disable
+
+    - name: "ISM_0484: SSH daemon configuration"
       fortios_system_global:
         access_token: "{{ fortios_access_token }}" 
         system_global:
