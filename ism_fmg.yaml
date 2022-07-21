@@ -1,0 +1,148 @@
+- hosts: fmg
+  gather_facts: no
+  connection: httpapi
+  collections:
+    - fortinet.fortimanager
+
+  vars:
+    vdom: "root"
+    ansible_connection: httpapi
+    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 443
+    classification: "protected"
+    default_login_banner: >
+      This is a private computer system. Unauthorized access or use
+      is prohibited and subject to prosecution and/or disciplinary
+      action. Any use of this system constitutes consent to
+      monitoring at all times and users are not entitled to any
+      expectation of privacy. If monitoring reveals possible evidence
+      of violation of criminal statutes, this evidence and any other
+      related information, including identification information about
+      the user, may be provided to law enforcement officials.
+      If monitoring reveals violations of security regulations or
+      unauthorized use, employees who violate security regulations or
+      make unauthorized use of this system are subject to appropriate
+      disciplinary action.
+  
+
+  tasks:
+    - name: "Get Interface Status"
+      register: interfaces
+      fmgr_fact:
+        facts:
+          selector: "system_interface"
+          params:
+            interface: ""
+
+    - name: "ISM-0428: Screen Lock"
+      fmgr_system_global:
+        system_global:
+          admin-lockout-duration: 15
+
+    - name: "ISM-0408: Login Banner"
+      fmgr_system_global:
+        system_global:
+          pre-login-banner: enable
+          pre-login-banner-message: "{{ login_banner | default(default_login_banner) }}"
+
+    - name: "ISM-0421: Password Policy (Protected)"
+      when: classification == "protected"
+      fmgr_system_passwordpolicy:
+        system_passwordpolicy:
+          minimum-length: 14
+          status: enable
+
+    - name: "ISM-1557: Password Policy (Secret)"
+      when: classification == "secret"
+      fmgr_system_passwordpolicy:
+        system_passwordpolicy:
+          minimum-length: 17
+          status: enable
+
+    - name: "ISM-0433: Password Policy (Top Secret)"
+      when: classification == "top_secret"
+      fmgr_system_passwordpolicy:
+        system_passwordpolicy:
+          minimum-length: 20
+          status: enable
+
+    - name: "ISM-1403: Failed Login Account Lockout"
+      fmgr_system_global:
+        system_global:
+          admin-lockout-threshold: 5
+          admin-lockout-duration: 300
+
+    - name: "ISM-1590: Password Expiry"
+      fmgr_system_passwordpolicy:
+        system_passwordpolicy:
+          expire: 365 
+      
+
+#    - name: "ISM-0521: IPv6 Disable"
+#      fmgr_system_global:
+#        system_global:
+#          gui_ipv6: disable
+#          ipv6_allow_anycast_probe: disable
+#          ipv6_allow_traffic_redirect: disable
+
+
+#    - name: "ISM-1304: Default Account Disable"
+#      fmgr_system_global:
+#        system_global:
+#          admin_maintainer: disable 
+
+#    - name: "ISM-0534: Disable Unused Ports"
+#      loop: "{{ interfaces.meta.results | selectattr('is_physical', 'true') | selectattr('link', 'equalto', 'down') | list }}"
+#      fortios_system_interface:
+#        state: "present"
+#        access_token: "{{ fortios_access_token }}"
+#        system_interface:
+#          name: "{{ item.name }}"
+#          status: "down"
+
+    - name: "ISM-1311: Disable SNMP v1 and v2"
+      fmgr_system_snmp_sysinfo:
+        system_snmp_sysinfo:
+          status: disable
+
+    - name: "ISM-0471: ASD Approved Cryptographic Algorithms"
+      fmgr_system_global:
+        system_global:
+          enc-algorithm: high
+
+#    - name: "ISM-0994: Prefer ECDH and ECDSA"
+#      meta: noop
+
+    - name: "ISM-0472: Use DH Modulus of at least 2048 Bits"
+      fmgr_system_global:
+        system_global:
+          dh-params: "8192"
+
+#    - name: "ISM-1139: Use latest TLS version"
+#      fmgr_system_global:
+#        system_global:
+#          ssl-protocol: "tlsv1.3"
+
+#    - name: "ISM-1453: PFS is used for TLS connections"
+#      fmgr_system_global:
+#        system_global:
+#          ssl-static-key-ciphers: disable
+
+#    - name: "ISM-1506: The use of SSH version 1 is disabled."
+#      fmgr_system_global:
+#        access_token: "{{ fortios_access_token }}" 
+#        system_global:
+#          admin_ssh_v1: disable
+#          admin_telnet: disable
+
+#    - name: "ISM-0484: SSH daemon configuration"
+#      fmgr_system_global:
+#        access_token: "{{ fortios_access_token }}" 
+#        system_global:
+#          ssh_hmac_md5: disable
+#          ssh_cbc_cipher: disable
+
+    - name: "Show Vars"
+      debug: 
+        msg: "{{ vars }}"
